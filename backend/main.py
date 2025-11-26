@@ -1,9 +1,16 @@
+from datetime import datetime, timedelta
+import shutil
+from apscheduler.schedulers.background import BackgroundScheduler
 from Caption_utils import extract_audio, generate_subtitles, burn_subtitles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
 import uuid
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(delete_expired_session, "interval", minutes=0)
+scheduler.start()
 
 app = FastAPI()
 
@@ -123,3 +130,15 @@ def download_video(
         media_type="video/mp4",
         filename=filename
     )
+    
+SESSION_EXPIRY_MINUTES = 30
+
+def delete_expired_session():
+    now = datetime.now()
+    
+    for folder in TEMP_DIR.iterdir():
+        if folder.is_dir():
+            folder_age = now - datetime.fromtimestamp(folder.stat().st_mtime)
+            if folder_age > timedelta(minutes=SESSION_EXPIRY_MINUTES):
+                shutil.rmtree(folder)
+                print("Deleted expired session: {folder}")
