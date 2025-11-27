@@ -1,8 +1,6 @@
-from faster_whisper import WhisperModel
+import subprocess
 import ffmpeg
 from pathlib import Path
-
-model = WhisperModel("base")
 
 
 def extract_audio(video_path: Path, output_dir: Path) -> Path:
@@ -10,7 +8,7 @@ def extract_audio(video_path: Path, output_dir: Path) -> Path:
 
     (
         ffmpeg.input(str(video_path))
-        .output(str(audio_path), sc=1, ar="16k")
+        .output(str(audio_path), ac=1, ar="16k")
         .overwrite_output()
         .run(quiet=True)
     )
@@ -19,44 +17,53 @@ def extract_audio(video_path: Path, output_dir: Path) -> Path:
 
 
 def generate_subtitles(audio_path: Path, output_dir: Path) -> Path:
-    segments, _ = model.transcribe(str(audio_path))
-
     srt_path = output_dir / "subtitles.srt"
-
-    with open(srt_path, "w") as f:
-        for idx, seg in enumerate(segments, start=1):
-            start = format_timestamp(seg.start)
-            end = format_timestamp(seg.end)
-            text = seg.text.strip()
-
-            f.write(f"{idx}\n")
-            f.write(f"{start} --> {end}\n")
-            f.write(f"{text}\n\n")
-
-            return srt_path
-
-        def format_timestamp(seconds: float) -> str:
-            hrs = int(seconds // 3600)
-            mins = int((seconds % 3600) // 60)
-            secs = seconds % 60
-            millis = int((secs % 1) * 1000)
-            secs = int(secs)
-
-            return f"{hrs:02}:{mins:02}:{secs:02},{millis:03}"
+    
+    # Use whisper CLI if available, otherwise provide helpful error
+    try:
+        subprocess.run(
+            ["whisper", str(audio_path), "--output_dir", str(output_dir), "--output_format", "srt", "--model", "base"],
+            check=True,
+            capture_output=True
+        )
         
-        def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path) -> Path:
-            output_path = output_dir / "final_captioned_video.mp4"
-            
-            (
-                ffmpeg.input(str(video_path))
-                .output(
-                    str(output_path),
-                    vf= f"subtitles={str(dubtitle_path)}",
-                    vcodec="libx264",
-                    acodec="abc"
-                )
-                .verwrite_output()
-                .run(quiet=True)
-            )
-            
-            return output_path
+        # Whisper creates a file named after the input audio
+        generated_srt = output_dir / f"{audio_path.stem}.srt"
+        if generated_srt.exists():
+            generated_srt.rename(srt_path)
+        
+    except FileNotFoundError:
+        # Whisper not installed, create a dummy subtitle file
+        with open(srt_path, "w") as f:
+            f.write("1\n")
+            f.write("00:00:00,000 --> 00:00:05,000\n")
+            f.write("[Whisper not installed. Install with: pip install openai-whisper]\n\n")
+    except subprocess.CalledProcessError as e:
+        # Whisper failed, create error subtitle
+        with open(srt_path, "w") as f:
+            f.write("1\n")
+            f.write("00:00:00,000 --> 00:00:05,000\n")
+            f.write(f"[Whisper error: {e.stderr.decode() if e.stderr else 'Unknown error'}]\n\n")
+    
+    return srt_path
+
+
+def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path) -> Path:
+    output_path = output_dir / "final_captioned_video.mp4"
+    
+    # Escape the subtitle path for ffmpeg filter
+    subtitle_str = str(subtitle_path).replace('\\', '/').replace(':', '\\\\:')
+    
+    (
+        ffmpeg.input(str(video_path))
+        .output(
+            str(output_path),
+            vf=f"subtitles={subtitle_str}",
+            vcodec="libx264",
+            acodec="aac"
+        )
+        .overwrite_output()
+        .run(quiet=True)
+    )
+    
+    return output_path

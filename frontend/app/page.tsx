@@ -111,106 +111,148 @@ function getDownloadUrl() {
   return `http://127.0.0.1:8000/download?session_id=${sessionId}&filename=${finalVideo}`;
 }
 
-const isProcessing = uploading || generatingCaptions || generatingFinal;
+  const isProcessing = uploading || generatingCaptions || generatingFinal;
 
-return (
-  <div className="p-8 max-w-4xl mx-auto">
-    <h1 className="text-3xl font-bold mb-6">Captioned Video Generator</h1>
+  const handleReset = () => {
+    setSelectedFile(null);
+    setVideoFilename(null);
+    setSubtitleFilename(null);
+    setFinalVideo(null);
+    setMessage("");
+    setProgress(0);
+  };
 
-    {/* Progress Indicator */}
-    <div className="mb-8">
-      <div className="flex justify-between mb-2">
-        <span className={`text-sm font-medium ${progress >= 1 ? 'text-green-600' : 'text-gray-400'}`}>1. Upload</span>
-        <span className={`text-sm font-medium ${progress >= 2 ? 'text-green-600' : 'text-gray-400'}`}>2. Generate Captions</span>
-        <span className={`text-sm font-medium ${progress >= 3 ? 'text-green-600' : 'text-gray-400'}`}>3. Create Video</span>
-        <span className={`text-sm font-medium ${progress >= 4 ? 'text-green-600' : 'text-gray-400'}`}>4. Download</span>
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
-        <div className="bg-green-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${(progress / 4) * 100}%` }}></div>
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Gradients */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-green-500/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-xl relative z-10">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl font-black tracking-tighter mb-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
+            CAPTION.AI
+          </h1>
+          <p className="text-gray-400 text-lg font-light tracking-wide">
+            Next-Gen Video Subtitling
+          </p>
+        </div>
+
+        <div className="bg-gray-900/60 backdrop-blur-2xl border border-gray-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+          {/* Neon Border Glow */}
+          <div className="absolute inset-0 border border-green-500/30 rounded-3xl pointer-events-none" />
+          
+          {/* Progress Bar */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gray-800">
+            <div 
+              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 shadow-[0_0_10px_#4ade80] transition-all duration-700 ease-out"
+              style={{ width: `${(progress / 4) * 100}%` }}
+            />
+          </div>
+
+          <div className="space-y-8 mt-4">
+            {/* File Selection Area */}
+            {!videoFilename && (
+              <div className="relative group/upload">
+                <input 
+                  type="file" 
+                  accept="video/*" 
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
+                  disabled={isProcessing}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20 disabled:cursor-not-allowed"
+                />
+                <div className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${
+                  selectedFile 
+                    ? 'border-green-500/50 bg-green-500/5' 
+                    : 'border-gray-700 hover:border-green-500/30 hover:bg-gray-800/50'
+                }`}>
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800 flex items-center justify-center group-hover/upload:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                    {selectedFile ? (
+                      <span className="text-3xl">🎬</span>
+                    ) : (
+                      <svg className="w-8 h-8 text-gray-400 group-hover/upload:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    )}
+                  </div>
+                  <p className={`text-lg font-medium transition-colors ${selectedFile ? 'text-green-400' : 'text-gray-300'}`}>
+                    {selectedFile ? selectedFile.name : "Drop video or click to browse"}
+                  </p>
+                  {!selectedFile && <p className="text-sm text-gray-500 mt-2">MP4, MOV, AVI supported</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Status Display */}
+            {(videoFilename || isProcessing) && (
+              <div className="bg-black/40 rounded-xl p-6 border border-gray-800 font-mono text-sm relative overflow-hidden">
+                <div className="flex items-center gap-3">
+                  {isProcessing ? (
+                    <div className="relative">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-ping absolute opacity-75"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full relative"></div>
+                    </div>
+                  ) : (
+                    <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
+                  )}
+                  <span className={isProcessing ? "text-green-400 animate-pulse" : "text-gray-400"}>
+                    {message || "System ready..."}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Smart Action Button */}
+            <div className="pt-2">
+              {!videoFilename ? (
+                <button 
+                  onClick={handleUpload} 
+                  disabled={!selectedFile || uploading} 
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {uploading ? "UPLOADING..." : "START UPLOAD"}
+                </button>
+              ) : !subtitleFilename ? (
+                <button 
+                  onClick={handleGenerateCaptions} 
+                  disabled={generatingCaptions} 
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
+                >
+                  {generatingCaptions ? "GENERATING..." : "GENERATE CAPTIONS"}
+                </button>
+              ) : !finalVideo ? (
+                <button 
+                  onClick={handleGenerateFinalVideo} 
+                  disabled={generatingFinal} 
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
+                >
+                  {generatingFinal ? "PROCESSING..." : "RENDER VIDEO"}
+                </button>
+              ) : (
+                <div className="flex gap-4">
+                  <a 
+                    href={getDownloadUrl()} 
+                    download
+                    className="flex-1 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-lg text-center shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                  >
+                    DOWNLOAD
+                  </a>
+                  <button 
+                    onClick={handleReset}
+                    className="px-6 py-4 rounded-xl border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-800 transition-all duration-300"
+                  >
+                    ↺
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center mt-8 text-gray-600 text-xs tracking-widest uppercase">
+          Powered by Faster-Whisper & FFmpeg
+        </div>
       </div>
     </div>
-
-    <div className="mb-6">
-      <label className="block text-sm font-medium mb-2">Select Video File</label>
-      <input 
-        type="file" 
-        accept="video/*" 
-        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
-        disabled={isProcessing}
-        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      {selectedFile && <p className="mt-2 text-sm text-gray-600">📁 Selected: {selectedFile.name}</p>}
-    </div>
-
-    <div className="flex flex-wrap gap-3 mb-6">
-      <button 
-        onClick={handleUpload} 
-        disabled={!selectedFile || uploading || isProcessing} 
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-      >
-        {uploading ? (
-          <>
-            <span className="inline-block animate-spin">⏳</span>
-            Uploading...
-          </>
-        ) : (
-          "1. Upload Video"
-        )}
-      </button>
-      
-      <button 
-        onClick={handleGenerateCaptions} 
-        disabled={!videoFilename || generatingCaptions || isProcessing} 
-        className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-      >
-        {generatingCaptions ? (
-          <>
-            <span className="inline-block animate-spin">⏳</span>
-            Generating...
-          </>
-        ) : (
-          "2. Generate Captions"
-        )}
-      </button>
-      
-      <button 
-        onClick={handleGenerateFinalVideo} 
-        disabled={!subtitleFilename || generatingFinal || isProcessing} 
-        className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-      >
-        {generatingFinal ? (
-          <>
-            <span className="inline-block animate-spin">⏳</span>
-            Creating...
-          </>
-        ) : (
-          "3. Generate Final Video"
-        )}
-      </button>
-    </div>
-
-    {finalVideo && (
-      <div className="mt-6 p-6 bg-green-50 border-2 border-green-500 rounded-lg">
-        <h2 className="text-xl font-bold mb-3 text-green-800">🎉 Success!</h2>
-        <a 
-          href={getDownloadUrl()} 
-          className="inline-block bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors" 
-          download
-        >
-          📥 Download Final Video
-        </a>
-      </div>
-    )}
-    
-    {message && (
-      <div className={`mt-6 p-4 rounded-lg ${
-        message.includes('❌') ? 'bg-red-50 border border-red-200 text-red-800' : 
-        message.includes('✅') || message.includes('🎉') ? 'bg-green-50 border border-green-200 text-green-800' : 
-        'bg-blue-50 border border-blue-200 text-blue-800'
-      }`}>
-        <p className="text-lg font-medium">{message}</p>
-      </div>
-    )}
-  </div>
-);
+  );
 }

@@ -1,16 +1,12 @@
 from datetime import datetime, timedelta
 import shutil
 from apscheduler.schedulers.background import BackgroundScheduler
-from Caption_utils import extract_audio, generate_subtitles, burn_subtitles
+from caption_utils import extract_audio, generate_subtitles, burn_subtitles
 from fastapi import FastAPI, UploadFile, File, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
 import uuid
-
-scheduler = BackgroundScheduler()
-scheduler.add_job(delete_expired_session, "interval", minutes=0)
-scheduler.start()
 
 app = FastAPI()
 
@@ -38,7 +34,7 @@ def health_check():
     return {"status": "ok", "message": "Backend is running"}
 
 
-@app.post("/upload")
+@app.post("/upload-video")
 async def upload_video(
     file: UploadFile = File(...),
     session_id: str = Header(..., alias="X-Session-Id"),
@@ -93,12 +89,12 @@ def gneerate_captions(
 def generate_captioned_video(
     session_id: str = Header(..., alias="X-Session-Id"),
     video_filename: str = Header(..., alias="X-Video-Filename"),
-    subtitle_path: str = Header(..., alias="X-Subtitle-Filename")
+    subtitle_filename: str = Header(..., alias="X-Subtitle-Filename")
 ):
     
     session_folder = get_session_dir(session_id)
     video_path = session_folder / video_filename
-    subtitle_path: str = Header(..., alias="X-Subtitle-Filename")
+    subtitle_path = session_folder / subtitle_filename
     
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found.")
@@ -141,4 +137,8 @@ def delete_expired_session():
             folder_age = now - datetime.fromtimestamp(folder.stat().st_mtime)
             if folder_age > timedelta(minutes=SESSION_EXPIRY_MINUTES):
                 shutil.rmtree(folder)
-                print("Deleted expired session: {folder}")
+                print(f"Deleted expired session: {folder}")
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(delete_expired_session, "interval", minutes=30)
+scheduler.start()
