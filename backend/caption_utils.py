@@ -138,3 +138,4 @@ def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path) -> P
     )
     
     return output_path
+``
