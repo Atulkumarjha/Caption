@@ -32,6 +32,9 @@ app.add_middleware(
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
 
+# File size limit: 20 MB for free tier performance
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB in bytes
+
 
 def get_session_dir(session_id: str) -> Path:
     safe_id = session_id.replace("/", "")
@@ -53,6 +56,19 @@ async def upload_video(
 
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="Only video files are allowed.")
+    
+    # Check file size
+    file.file.seek(0, 2)  # Seek to end
+    file_size = file.file.tell()  # Get position (size)
+    file.file.seek(0)  # Reset to beginning
+    
+    if file_size > MAX_FILE_SIZE:
+        size_mb = file_size / (1024 * 1024)
+        limit_mb = MAX_FILE_SIZE / (1024 * 1024)
+        raise HTTPException(
+            status_code=413, 
+            detail=f"File too large ({size_mb:.1f} MB). Maximum size is {limit_mb:.0f} MB."
+        )
 
     session_folder = get_session_dir(session_id)
 
@@ -63,6 +79,8 @@ async def upload_video(
     with open(saved_path, "wb") as out_file:
         while chunk := await file.read(1024 * 1024):
             out_file.write(chunk)
+    
+    print(f"Video uploaded: {saved_path.name} ({file_size / (1024 * 1024):.2f} MB)")
 
     return {
         "status": "ok",
