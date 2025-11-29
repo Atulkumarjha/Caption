@@ -15,6 +15,10 @@ export default function Home() {
 
   const [videoFilename, setVideoFilename] = useState(null);
   const [subtitleFilename, setSubtitleFilename] = useState(null);
+  const [subtitles, setSubtitles] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [fontSize, setFontSize] = useState(24);
+  const [fontColor, setFontColor] = useState("#FFFFFF");
 
   async function handleUpload() {
     if (!selectedFile) {
@@ -29,7 +33,7 @@ export default function Home() {
     try {
       setUploading(true);
       setProgress(1);
-      setMessage("📤 Uploading video... Please wait.");
+      setMessage("Uploading video... Please wait.");
 
       const res = await axios.post("http://127.0.0.1:8000/upload-video", formData, {
         headers: {
@@ -68,7 +72,9 @@ export default function Home() {
       );
 
       setSubtitleFilename(res.data.subtitle_file);
-      setMessage("✅ Subtitles generated successfully! Ready to create final video.");
+      setSubtitles(res.data.subtitles || []);
+      setShowPreview(true);
+      setMessage("✅ Subtitles generated! Preview and customize below.");
     } catch (err: any) {
       setMessage("❌ Subtitle generation failed: " + err.message);
     }finally {
@@ -92,6 +98,8 @@ export default function Home() {
               "X-Session-Id": sessionId,
               "X-Video-Filename": videoFilename,
               "X-Subtitle-Filename": subtitleFilename,
+              "X-Font-Size": fontSize.toString(),
+              "X-Font-Color": fontColor,
             },
           }
         );
@@ -198,6 +206,81 @@ function getDownloadUrl() {
                   <span className={isProcessing ? "text-green-400 animate-pulse" : "text-gray-400"}>
                     {message || "System ready..."}
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* Caption Preview and Customization */}
+            {showPreview && subtitleFilename && !finalVideo && (
+              <div className="space-y-6">
+                <div className="bg-black/60 rounded-2xl p-6 border border-gray-700">
+                  <h3 className="text-lg font-bold text-green-400 mb-4">Customize Captions</h3>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-3">
+                        Font Size: <span className="text-green-400 font-bold">{fontSize}px</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="16"
+                        max="48"
+                        value={fontSize}
+                        onChange={(e) => setFontSize(parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Small</span>
+                        <span>Large</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-3">
+                        Font Color
+                      </label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { color: '#FFFFFF', name: 'White' },
+                          { color: '#FFFF00', name: 'Yellow' },
+                          { color: '#FF0000', name: 'Red' },
+                          { color: '#00FF00', name: 'Green' },
+                          { color: '#00FFFF', name: 'Cyan' },
+                          { color: '#FF00FF', name: 'Magenta' }
+                        ].map(({ color, name }) => (
+                          <button
+                            key={color}
+                            onClick={() => setFontColor(color)}
+                            className={`h-12 rounded-lg border-2 transition-all flex items-center justify-center ${
+                              fontColor === color 
+                                ? 'border-green-400 scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]' 
+                                : 'border-gray-600 hover:border-gray-400'
+                            }`}
+                            style={{ backgroundColor: color }}
+                          >
+                            <span className={`text-xs font-bold ${color === '#FFFF00' || color === '#00FFFF' || color === '#00FF00' ? 'text-black' : 'text-white'}`}>
+                              {fontColor === color && '✓'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Preview Sample */}
+                  <div className="mt-6 bg-gray-950 rounded-xl p-4 border border-gray-800">
+                    <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                    <p 
+                      className="text-center font-bold"
+                      style={{ 
+                        color: fontColor, 
+                        fontSize: `${fontSize * 0.8}px`,
+                        textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
+                      }}
+                    >
+                      Sample Caption Text
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

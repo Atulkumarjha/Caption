@@ -119,17 +119,23 @@ def format_timestamp(seconds: float) -> str:
     return f"{hrs:02d}:{mins:02d}:{secs:02d},{millis:03d}"
 
 
-def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path) -> Path:
+def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path, font_size: int = 24, font_color: str = "#FFFFFF") -> Path:
     output_path = output_dir / "final_captioned_video.mp4"
+    
+    # Convert hex color to ffmpeg format
+    color_hex = font_color.lstrip('#')
     
     # Escape the subtitle path for ffmpeg filter
     subtitle_str = str(subtitle_path).replace('\\', '/').replace(':', '\\\\:')
+    
+    # Build subtitle filter with custom styling
+    subtitle_filter = f"subtitles={subtitle_str}:force_style='FontSize={font_size},PrimaryColour=&H{color_hex}&,OutlineColour=&H000000&,Outline=2,Shadow=1'"
     
     (
         ffmpeg.input(str(video_path))
         .output(
             str(output_path),
-            vf=f"subtitles={subtitle_str}",
+            vf=subtitle_filter,
             vcodec="libx264",
             acodec="aac"
         )
@@ -138,4 +144,3 @@ def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path) -> P
     )
     
     return output_path
-``
