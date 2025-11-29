@@ -4,6 +4,8 @@ import { useState } from "react";
 import axios from "axios";
 import { getSessionId } from "../lib/session";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
@@ -35,7 +37,7 @@ export default function Home() {
       setProgress(1);
       setMessage("Uploading video... Please wait.");
 
-      const res = await axios.post("http://127.0.0.1:8000/upload-video", formData, {
+      const res = await axios.post(`${API_URL}/upload-video`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           "X-Session-Id": sessionId,
@@ -61,7 +63,7 @@ export default function Home() {
       setMessage("Generating captions... This may take a moment.");
 
       const res = await axios.post(
-        "http://127.0.0.1:8000/generate-captions",
+        `${API_URL}/generate-captions`,
         {},
         {
           headers: {
@@ -91,7 +93,7 @@ export default function Home() {
         setMessage("🎥 Burning subtitles into video... Almost done!");
 
         const res = await axios.post(
-          "http://127.0.0.1:8000/generate-captioned-video",
+          `${API_URL}/generate-captioned-video`,
           {},
           {
             headers: {
@@ -116,7 +118,7 @@ export default function Home() {
 
 function getDownloadUrl() {
   const sessionId = getSessionId();
-  return `http://127.0.0.1:8000/download?session_id=${sessionId}&filename=${finalVideo}`;
+  return `${API_URL}/download?session_id=${sessionId}&filename=${finalVideo}`;
 }
 
   const isProcessing = uploading || generatingCaptions || generatingFinal;
