@@ -90,7 +90,7 @@ export default function Home() {
     try {
       setGeneratingFinal(true);
       setProgress(3);
-        setMessage("🎥 Burning subtitles into video... Almost done!");
+        setMessage("🎥 Adding captions into video... Almost done!");
 
         const res = await axios.post(
           `${API_URL}/generate-captioned-video`,
