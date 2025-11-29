@@ -44,9 +44,9 @@ export default function Home() {
     );
 
     setVideoFilename(res.data.filename);
-    setMessage("✅ Video uploaded successfully! Ready to generate captions.");
+    setMessage("Video uploaded successfully! Ready to generate captions.");
     } catch (err: any) {
-      setMessage("❌ Upload failed: " + err.message);
+      setMessage("Upload failed: " + err.message);
     } finally {
       setUploading(false);
     }
@@ -58,7 +58,7 @@ export default function Home() {
     try {
       setGeneratingCaptions(true);
       setProgress(2);
-      setMessage("🎬 Analyzing video and generating subtitles... This may take a moment.");
+      setMessage("Generating captions... This may take a moment.");
 
       const res = await axios.post(
         "http://127.0.0.1:8000/generate-captions",
@@ -74,9 +74,9 @@ export default function Home() {
       setSubtitleFilename(res.data.subtitle_file);
       setSubtitles(res.data.subtitles || []);
       setShowPreview(true);
-      setMessage("✅ Subtitles generated! Preview and customize below.");
+      setMessage("Captions generated! Customize it below as you like.");
     } catch (err: any) {
-      setMessage("❌ Subtitle generation failed: " + err.message);
+      setMessage("caption generation failed: " + err.message);
     }finally {
       setGeneratingCaptions(false);
     }
@@ -106,9 +106,9 @@ export default function Home() {
 
         setFinalVideo(res.data.output_file);
         setProgress(4);
-        setMessage("🎉 Final video ready! Click below to download.");
+        setMessage("Captioned video ready! Click below to download.");
   } catch (err: any) {
-    setMessage("❌ Final video generation failed: " + err.message);
+    setMessage("Captioned video generation failed: " + err.message);
   } finally {
     setGeneratingFinal(false);
   }
@@ -139,10 +139,10 @@ function getDownloadUrl() {
       <div className="w-full max-w-xl relative z-10">
         <div className="text-center mb-12">
           <h1 className="text-6xl font-black tracking-tighter mb-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">
-            CAPTION.AI
+            CAPTION
           </h1>
           <p className="text-gray-400 text-lg font-light tracking-wide">
-            Next-Gen Video Subtitling
+            Captioning Made Simple
           </p>
         </div>
 
@@ -186,7 +186,7 @@ function getDownloadUrl() {
                   <p className={`text-lg font-medium transition-colors ${selectedFile ? 'text-green-400' : 'text-gray-300'}`}>
                     {selectedFile ? selectedFile.name : "Drop video or click to browse"}
                   </p>
-                  {!selectedFile && <p className="text-sm text-gray-500 mt-2">MP4, MOV, AVI supported</p>}
+                  {!selectedFile && <p className="text-sm text-gray-500 mt-2">ALL media files are supported</p>}
                 </div>
               </div>
             )}
@@ -214,7 +214,7 @@ function getDownloadUrl() {
             {showPreview && subtitleFilename && !finalVideo && (
               <div className="space-y-6">
                 <div className="bg-black/60 rounded-2xl p-6 border border-gray-700">
-                  <h3 className="text-lg font-bold text-green-400 mb-4">Customize Captions</h3>
+                  <h3 className="text-lg font-bold text-green-400 mb-4">Caption Customization</h3>
                   
                   <div className="grid grid-cols-2 gap-6">
                     <div>
@@ -269,7 +269,7 @@ function getDownloadUrl() {
 
                   {/* Live Preview Sample */}
                   <div className="mt-6 bg-gray-950 rounded-xl p-4 border border-gray-800">
-                    <p className="text-xs text-gray-500 mb-2">Preview:</p>
+                    <p className="text-xs text-gray-500 mb-2">Customized:</p>
                     <p 
                       className="text-center font-bold"
                       style={{ 
@@ -278,7 +278,7 @@ function getDownloadUrl() {
                         textShadow: '2px 2px 4px rgba(0,0,0,0.8)'
                       }}
                     >
-                      Sample Caption Text
+                      CAPTION WILL LOOK LIKE THIS ON VIDEO
                     </p>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ function getDownloadUrl() {
                   disabled={generatingFinal} 
                   className="w-full py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-black font-bold text-lg shadow-[0_0_20px_rgba(74,222,128,0.3)] hover:shadow-[0_0_30px_rgba(74,222,128,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
                 >
-                  {generatingFinal ? "PROCESSING..." : "RENDER VIDEO"}
+                  {generatingFinal ? "PROCESSING..." : "DOWNLOAD VIDEO"}
                 </button>
               ) : (
                 <div className="flex gap-4">
