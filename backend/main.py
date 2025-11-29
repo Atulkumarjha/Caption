@@ -32,6 +32,9 @@ app.add_middleware(
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
 
+# File size limit: 20 MB for free tier performance
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB in bytes
+
 
 def get_session_dir(session_id: str) -> Path:
     safe_id = session_id.replace("/", "")
@@ -53,6 +56,19 @@ async def upload_video(
 
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="Only video files are allowed.")
+    
+    # Check file size
+    file.file.seek(0, 2)  # Seek to end
+    file_size = file.file.tell()  # Get position (size)
+    file.file.seek(0)  # Reset to beginning
+    
+    if file_size > MAX_FILE_SIZE:
+        size_mb = file_size / (1024 * 1024)
+        limit_mb = MAX_FILE_SIZE / (1024 * 1024)
+        raise HTTPException(
+            status_code=413, 
+            detail=f"File too large ({size_mb:.1f} MB). Maximum size is {limit_mb:.0f} MB."
+        )
 
     session_folder = get_session_dir(session_id)
 
@@ -63,6 +79,8 @@ async def upload_video(
     with open(saved_path, "wb") as out_file:
         while chunk := await file.read(1024 * 1024):
             out_file.write(chunk)
+    
+    print(f"Video uploaded: {saved_path.name} ({file_size / (1024 * 1024):.2f} MB)")
 
     return {
         "status": "ok",
@@ -123,24 +141,32 @@ def generate_captioned_video(
     font_size: int = Header(24, alias="X-Font-Size"),
     font_color: str = Header("#FFFFFF", alias="X-Font-Color")
 ):
+    print(f"Generating captioned video: session={session_id}, video={video_filename}, font_size={font_size}, color={font_color}")
     
     session_folder = get_session_dir(session_id)
     video_path = session_folder / video_filename
     subtitle_path = session_folder / subtitle_filename
     
     if not video_path.exists():
+        print(f"Video not found: {video_path}")
         raise HTTPException(status_code=404, detail="Video not found.")
     
     if not subtitle_path.exists():
+        print(f"Subtitle not found: {subtitle_path}")
         raise HTTPException(status_code=404, detail="Subtitle file not found.")
     
-    output_video = burn_subtitles(video_path, subtitle_path, session_folder, font_size, font_color)
-    
-    return {
-        "status": "ok",
-        "message": "Captioned video generated successfully.",
-        "output_file": output_video.name
-    }
+    try:
+        output_video = burn_subtitles(video_path, subtitle_path, session_folder, font_size, font_color)
+        print(f"Video generated successfully: {output_video}")
+        
+        return {
+            "status": "ok",
+            "message": "Captioned video generated successfully.",
+            "output_file": output_video.name
+        }
+    except Exception as e:
+        print(f"Error generating captioned video: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Video processing failed: {str(e)}")
     
 @app.get("/download")
 def download_video(

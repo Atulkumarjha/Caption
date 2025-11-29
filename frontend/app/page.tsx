@@ -22,9 +22,18 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(24);
   const [fontColor, setFontColor] = useState("#FFFFFF");
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
   async function handleUpload() {
     if (!selectedFile) {
       setMessage("Please select a video file.");
+      return;
+    }
+
+    // Check file size
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(1);
+      setMessage(`File too large (${sizeMB} MB). Maximum size is 20 MB.`);
       return;
     }
 
@@ -204,7 +213,13 @@ function getDownloadUrl() {
                   <p className={`text-lg font-medium transition-colors ${selectedFile ? 'text-green-400' : 'text-gray-300'}`}>
                     {selectedFile ? selectedFile.name : "Drop video or click to browse"}
                   </p>
-                  {!selectedFile && <p className="text-sm text-gray-500 mt-2">ALL media files are supported</p>}
+                  {selectedFile && (
+                    <p className="text-sm text-gray-400 mt-2">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      {selectedFile.size > MAX_FILE_SIZE && <span className="text-red-400 ml-2">⚠️ Too large (max 20 MB)</span>}
+                    </p>
+                  )}
+                  {!selectedFile && <p className="text-sm text-gray-500 mt-2">Maximum file size: 20 MB</p>}
                 </div>
               </div>
             )}
