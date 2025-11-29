@@ -60,7 +60,7 @@ export default function Home() {
     try {
       setGeneratingCaptions(true);
       setProgress(2);
-      setMessage("Generating captions... This may take a moment.");
+      setMessage("Generating captions... This may take 1-2 minutes.");
 
       const res = await axios.post(
         `${API_URL}/generate-captions`,
@@ -70,6 +70,7 @@ export default function Home() {
             "X-Session-Id": sessionId,
             "X-Video-Filename": videoFilename,
           },
+          timeout: 180000, // 3 minutes timeout
         }
       );
 
@@ -78,7 +79,14 @@ export default function Home() {
       setShowPreview(true);
       setMessage("Captions generated! Customize it below as you like.");
     } catch (err: any) {
-      setMessage("caption generation failed: " + err.message);
+      if (err.code === 'ECONNABORTED') {
+        setMessage("Timeout. Try a shorter video or check backend.");
+      } else if (err.response) {
+        setMessage(`Error: ${err.response.data?.detail || err.message}`);
+      } else {
+        setMessage(` Network error: ${err.message}`);
+      }
+      console.error("Full error:", err);
     }finally {
       setGeneratingCaptions(false);
     }
@@ -90,7 +98,7 @@ export default function Home() {
     try {
       setGeneratingFinal(true);
       setProgress(3);
-        setMessage("🎥 Adding captions into video... Almost done!");
+        setMessage("Adding captions into video... This may take 2-3 minutes.");
 
         const res = await axios.post(
           `${API_URL}/generate-captioned-video`,
@@ -103,6 +111,7 @@ export default function Home() {
               "X-Font-Size": fontSize.toString(),
               "X-Font-Color": fontColor,
             },
+            timeout: 300000, // 5 minutes timeout
           }
         );
 
@@ -110,7 +119,14 @@ export default function Home() {
         setProgress(4);
         setMessage("Captioned video ready! Click below to download.");
   } catch (err: any) {
-    setMessage("Captioned video generation failed: " + err.message);
+    if (err.code === 'ECONNABORTED') {
+      setMessage("❌ Timeout! Try a shorter video or wait for backend to wake up.");
+    } else if (err.response) {
+      setMessage(`❌ Error: ${err.response.data?.detail || err.message}`);
+    } else {
+      setMessage(`❌ Network error: ${err.message}. Backend may be sleeping (takes 30-60s to wake).`);
+    }
+    console.error("Full error:", err);
   } finally {
     setGeneratingFinal(false);
   }
