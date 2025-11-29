@@ -77,11 +77,30 @@ def gneerate_captions(
         audio_path = extract_audio(video_path, session_folder)
 
         srt_path = generate_subtitles(audio_path, session_folder)
+        
+        # Read and parse subtitles for preview
+        subtitles = []
+        try:
+            with open(srt_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                blocks = content.strip().split('\n\n')
+                for block in blocks:
+                    lines = block.split('\n')
+                    if len(lines) >= 3:
+                        subtitles.append({
+                            'index': lines[0],
+                            'time': lines[1],
+                            'start': lines[1].split(' --> ')[0],
+                            'text': ' '.join(lines[2:])
+                        })
+        except:
+            pass
 
         return {
             "status": "ok",
             "message": "Subtitles generated successfully.",
             "subtitle_file": srt_path.name,
+            "subtitles": subtitles[:50]  # Return first 50 for preview
         }
         
         
@@ -89,7 +108,9 @@ def gneerate_captions(
 def generate_captioned_video(
     session_id: str = Header(..., alias="X-Session-Id"),
     video_filename: str = Header(..., alias="X-Video-Filename"),
-    subtitle_filename: str = Header(..., alias="X-Subtitle-Filename")
+    subtitle_filename: str = Header(..., alias="X-Subtitle-Filename"),
+    font_size: int = Header(24, alias="X-Font-Size"),
+    font_color: str = Header("#FFFFFF", alias="X-Font-Color")
 ):
     
     session_folder = get_session_dir(session_id)
@@ -102,7 +123,7 @@ def generate_captioned_video(
     if not subtitle_path.exists():
         raise HTTPException(status_code=404, detail="Subtitle file not found.")
     
-    output_video = burn_subtitles(video_path, subtitle_path, session_folder)
+    output_video = burn_subtitles(video_path, subtitle_path, session_folder, font_size, font_color)
     
     return {
         "status": "ok",

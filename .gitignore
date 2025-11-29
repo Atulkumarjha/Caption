@@ -1,2 +1,6 @@
 backend/__pycache__/
 **/__pycache__/
+backend/temp/
+*.mp4
+*.srt
+*.wav
