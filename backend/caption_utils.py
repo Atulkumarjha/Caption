@@ -122,6 +122,8 @@ def format_timestamp(seconds: float) -> str:
 def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path, font_size: int = 24, font_color: str = "#FFFFFF") -> Path:
     output_path = output_dir / "final_captioned_video.mp4"
     
+    print(f"Starting subtitle burn: video={video_path}, srt={subtitle_path}, size={font_size}, color={font_color}")
+    
     # Convert hex color to ffmpeg format
     color_hex = font_color.lstrip('#')
     
@@ -131,16 +133,25 @@ def burn_subtitles(video_path: Path, subtitle_path: Path, output_dir: Path, font
     # Build subtitle filter with custom styling
     subtitle_filter = f"subtitles={subtitle_str}:force_style='FontSize={font_size},PrimaryColour=&H{color_hex}&,OutlineColour=&H000000&,Outline=2,Shadow=1'"
     
-    (
-        ffmpeg.input(str(video_path))
-        .output(
-            str(output_path),
-            vf=subtitle_filter,
-            vcodec="libx264",
-            acodec="aac"
+    print(f"FFmpeg filter: {subtitle_filter}")
+    
+    try:
+        (
+            ffmpeg.input(str(video_path))
+            .output(
+                str(output_path),
+                vf=subtitle_filter,
+                vcodec="libx264",
+                acodec="aac",
+                preset="ultrafast",  # Faster encoding
+                crf=23  # Quality setting
+            )
+            .overwrite_output()
+            .run(capture_stdout=True, capture_stderr=True)
         )
-        .overwrite_output()
-        .run(quiet=True)
-    )
+        print(f"Successfully created captioned video at {output_path}")
+    except ffmpeg.Error as e:
+        print(f"FFmpeg error: {e.stderr.decode()}")
+        raise Exception(f"Video processing failed: {e.stderr.decode()}")
     
     return output_path
